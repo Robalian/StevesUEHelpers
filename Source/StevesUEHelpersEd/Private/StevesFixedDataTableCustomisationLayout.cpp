@@ -29,169 +29,189 @@ class SToolTip;
 
 void FStevesFixedDataTableCustomisationLayout::CustomizeHeader(TSharedRef<class IPropertyHandle> InStructPropertyHandle, class FDetailWidgetRow& HeaderRow, IPropertyTypeCustomizationUtils& StructCustomizationUtils)
 {
-	DataTablePropertyHandle = InStructPropertyHandle->GetChildHandle("DataTable");
-	RowNamePropertyHandle = InStructPropertyHandle->GetChildHandle("RowName");
+  DataTablePropertyHandle = InStructPropertyHandle->GetChildHandle("DataTable");
+  RowNamePropertyHandle = InStructPropertyHandle->GetChildHandle("RowName");
 
-	if (InStructPropertyHandle->HasMetaData(TEXT("DataTable")))
-	{
-		// Find data table from asset ref
-		const FString& DataTablePath = InStructPropertyHandle->GetMetaData(TEXT("DataTable"));
-		if (UDataTable* DataTable = LoadObject<UDataTable>(nullptr, *DataTablePath, nullptr))
-		{
-			UObject* Existing = nullptr;
-			const bool TablePicked = DataTablePropertyHandle->GetValue(Existing) == FPropertyAccess::Success;
-			if (!TablePicked || Existing != DataTable)
-			{
-				DataTablePropertyHandle->SetValue(DataTable);
-			}
-		}
-		else
-		{
-			UE_LOG(LogDataTable, Warning, TEXT("No Datatable found at %s"), *DataTablePath);
-		}
-	}
-	else
-	{
-		UE_LOG(LogDataTable, Warning, TEXT("No Datatable meta tag present on property %s"), *InStructPropertyHandle->GetPropertyDisplayName().ToString());
-	}
-
-	
-
-	FPropertyComboBoxArgs ComboArgs(RowNamePropertyHandle, 
-			FOnGetPropertyComboBoxStrings::CreateSP(this, &FStevesFixedDataTableCustomisationLayout::OnGetRowStrings), 
-			FOnGetPropertyComboBoxValue::CreateSP(this, &FStevesFixedDataTableCustomisationLayout::OnGetRowValueString));
-	ComboArgs.ShowSearchForItemCount = 1;
+  if (InStructPropertyHandle->HasMetaData(TEXT("DataTable")))
+  {
+    // Find data table from asset ref
+    const FString& DataTablePath = InStructPropertyHandle->GetMetaData(TEXT("DataTable"));
+    if (UDataTable* DataTable = LoadObject<UDataTable>(nullptr, *DataTablePath, nullptr))
+    {
+      UObject* Existing = nullptr;
+      const bool TablePicked = DataTablePropertyHandle->GetValue(Existing) == FPropertyAccess::Success;
+      if (!TablePicked || Existing != DataTable)
+      {
+        DataTablePropertyHandle->SetValue(DataTable);
+      }
+    }
+    else
+    {
+      UE_LOG(LogDataTable, Warning, TEXT("No Datatable found at %s"), *DataTablePath);
+    }
+  }
+  else
+  {
+    UE_LOG(LogDataTable, Warning, TEXT("No Datatable meta tag present on property %s"), *InStructPropertyHandle->GetPropertyDisplayName().ToString());
+  }
 
 
-	TSharedRef<SWidget> BrowseTableButton = PropertyCustomizationHelpers::MakeBrowseButton(
-		FSimpleDelegate::CreateSP(this, &FStevesFixedDataTableCustomisationLayout::BrowseTableButtonClicked),
-		LOCTEXT("SsBrowseToDatatable", "Browse to DataTable in Content Browser"));
-	HeaderRow
-	.NameContent()
-	[
-		InStructPropertyHandle->CreatePropertyNameWidget()
-	]
-	.ValueContent()
-	.MaxDesiredWidth(0.0f) // don't constrain the combo button width
-	[
-			SNew(SHorizontalBox)
-			+SHorizontalBox::Slot()
-			.FillWidth(1.0f)
-			[
-				PropertyCustomizationHelpers::MakePropertyComboBox(ComboArgs)
-			]
-			+SHorizontalBox::Slot()
-			.Padding(2.0f)
-			.HAlign(HAlign_Center)
-			.VAlign(VAlign_Center)
-			.AutoWidth()
-			[
-				BrowseTableButton
-			]
-	];	;
 
-	FDataTableEditorUtils::AddSearchForReferencesContextMenu(HeaderRow, FExecuteAction::CreateSP(this, &FStevesFixedDataTableCustomisationLayout::OnSearchForReferences));
+  FPropertyComboBoxArgs ComboArgs(RowNamePropertyHandle,
+    FOnGetPropertyComboBoxStrings::CreateSP(this, &FStevesFixedDataTableCustomisationLayout::OnGetRowStrings),
+    FOnGetPropertyComboBoxValue::CreateSP(this, &FStevesFixedDataTableCustomisationLayout::OnGetRowValueString)
+  );
+  ComboArgs.ShowSearchForItemCount = 1;
+
+  TSharedRef<SWidget> BrowseTableButton = PropertyCustomizationHelpers::MakeBrowseButton(
+    FSimpleDelegate::CreateSP(this, &FStevesFixedDataTableCustomisationLayout::BrowseTableButtonClicked),
+    LOCTEXT("SsBrowseToDatatable", "Browse to DataTable in Content Browser")
+  );
+
+  TSharedRef<SWidget> ClearButton = PropertyCustomizationHelpers::MakeClearButton(
+    FSimpleDelegate::CreateSP(this, &FStevesFixedDataTableCustomisationLayout::ClearButtonClicked),
+    LOCTEXT("SsClear", "Clear")
+  );
+
+  HeaderRow
+    .NameContent()
+    [
+      InStructPropertyHandle->CreatePropertyNameWidget()
+    ]
+    .ValueContent()
+    .MaxDesiredWidth(0.0f) // don't constrain the combo button width
+    [
+      SNew(SHorizontalBox)
+        + SHorizontalBox::Slot()
+        .FillWidth(1.0f)
+        [
+          PropertyCustomizationHelpers::MakePropertyComboBox(ComboArgs)
+        ]
+        + SHorizontalBox::Slot()
+        .Padding(2.0f)
+        .HAlign(HAlign_Center)
+        .VAlign(VAlign_Center)
+        .AutoWidth()
+        [
+          BrowseTableButton
+        ]
+        + SHorizontalBox::Slot()
+        .Padding(2.0f)
+        .HAlign(HAlign_Center)
+        .VAlign(VAlign_Center)
+        .AutoWidth()
+        [
+          ClearButton
+        ]
+    ];
+
+  FDataTableEditorUtils::AddSearchForReferencesContextMenu(HeaderRow, FExecuteAction::CreateSP(this, &FStevesFixedDataTableCustomisationLayout::OnSearchForReferences));
 }
 
 void FStevesFixedDataTableCustomisationLayout::BrowseTableButtonClicked()
 {
-	if (DataTablePropertyHandle.IsValid())
-	{
-		UObject* SourceDataTable = nullptr;
-		if (DataTablePropertyHandle->GetValue(SourceDataTable) == FPropertyAccess::Success)
-		{
-			TArray<FAssetData> Assets;
-			Assets.Add(SourceDataTable);
-			GEditor->SyncBrowserToObjects(Assets);
-		}
-	}	
+  if (DataTablePropertyHandle.IsValid())
+  {
+    UObject* SourceDataTable = nullptr;
+    if (DataTablePropertyHandle->GetValue(SourceDataTable) == FPropertyAccess::Success)
+    {
+      TArray<FAssetData> Assets;
+      Assets.Add(SourceDataTable);
+      GEditor->SyncBrowserToObjects(Assets);
+    }
+  }
+}
+
+void FStevesFixedDataTableCustomisationLayout::ClearButtonClicked()
+{
+  RowNamePropertyHandle->ResetToDefault();
 }
 
 bool FStevesFixedDataTableCustomisationLayout::GetCurrentValue(UDataTable*& OutDataTable, FName& OutName) const
 {
-	if (RowNamePropertyHandle.IsValid() && RowNamePropertyHandle->IsValidHandle() && DataTablePropertyHandle.IsValid() && DataTablePropertyHandle->IsValidHandle())
-	{
-		// If either handle is multiple value or failure, fail
-		UObject* SourceDataTable = nullptr;
-		if (DataTablePropertyHandle->GetValue(SourceDataTable) == FPropertyAccess::Success)
-		{
-			OutDataTable = Cast<UDataTable>(SourceDataTable);
+  if (RowNamePropertyHandle.IsValid() && RowNamePropertyHandle->IsValidHandle() && DataTablePropertyHandle.IsValid() && DataTablePropertyHandle->IsValidHandle())
+  {
+    // If either handle is multiple value or failure, fail
+    UObject* SourceDataTable = nullptr;
+    if (DataTablePropertyHandle->GetValue(SourceDataTable) == FPropertyAccess::Success)
+    {
+      OutDataTable = Cast<UDataTable>(SourceDataTable);
 
-			if (RowNamePropertyHandle->GetValue(OutName) == FPropertyAccess::Success)
-			{
-				return true;
-			}
-		}
-	}
-	return false;
+      if (RowNamePropertyHandle->GetValue(OutName) == FPropertyAccess::Success)
+      {
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 void FStevesFixedDataTableCustomisationLayout::OnSearchForReferences()
 {
-	UDataTable* DataTable;
-	FName RowName;
+  UDataTable* DataTable;
+  FName RowName;
 
-	if (GetCurrentValue(DataTable, RowName) && DataTable)
-	{
-		TArray<FAssetIdentifier> AssetIdentifiers;
-		AssetIdentifiers.Add(FAssetIdentifier(DataTable, RowName));
+  if (GetCurrentValue(DataTable, RowName) && DataTable)
+  {
+    TArray<FAssetIdentifier> AssetIdentifiers;
+    AssetIdentifiers.Add(FAssetIdentifier(DataTable, RowName));
 
-		FEditorDelegates::OnOpenReferenceViewer.Broadcast(AssetIdentifiers, FReferenceViewerParams());
-	}
+    FEditorDelegates::OnOpenReferenceViewer.Broadcast(AssetIdentifiers, FReferenceViewerParams());
+  }
 }
 
 FString FStevesFixedDataTableCustomisationLayout::OnGetRowValueString() const
 {
-	if (!RowNamePropertyHandle.IsValid() || !RowNamePropertyHandle->IsValidHandle())
-	{
-		return FString();
-	}
+  if (!RowNamePropertyHandle.IsValid() || !RowNamePropertyHandle->IsValidHandle())
+  {
+    return FString();
+  }
 
-	FName RowNameValue;
-	const FPropertyAccess::Result RowResult = RowNamePropertyHandle->GetValue(RowNameValue);
-	if (RowResult == FPropertyAccess::Success)
-	{
-		if (RowNameValue.IsNone())
-		{
-			return LOCTEXT("DataTable_None", "None").ToString();
-		}
-		return RowNameValue.ToString();
-	}
-	else if (RowResult == FPropertyAccess::Fail)
-	{
-		return LOCTEXT("DataTable_None", "None").ToString();
-	}
-	else
-	{
-		return LOCTEXT("MultipleValues", "Multiple Values").ToString();
-	}
+  FName RowNameValue;
+  const FPropertyAccess::Result RowResult = RowNamePropertyHandle->GetValue(RowNameValue);
+  if (RowResult == FPropertyAccess::Success)
+  {
+    if (RowNameValue.IsNone())
+    {
+      return LOCTEXT("DataTable_None", "None").ToString();
+    }
+    return RowNameValue.ToString();
+  }
+  else if (RowResult == FPropertyAccess::Fail)
+  {
+    return LOCTEXT("DataTable_None", "None").ToString();
+  }
+  else
+  {
+    return LOCTEXT("MultipleValues", "Multiple Values").ToString();
+  }
 }
 
 void FStevesFixedDataTableCustomisationLayout::OnGetRowStrings(TArray< TSharedPtr<FString> >& OutStrings, TArray<TSharedPtr<SToolTip>>& OutToolTips, TArray<bool>& OutRestrictedItems) const
 {
-	UDataTable* DataTable = nullptr;
-	FName IgnoredRowName;
+  UDataTable* DataTable = nullptr;
+  FName IgnoredRowName;
 
-	// Ignore return value as we will show rows if table is the same but row names are multiple values
-	GetCurrentValue(DataTable, IgnoredRowName);
+  // Ignore return value as we will show rows if table is the same but row names are multiple values
+  GetCurrentValue(DataTable, IgnoredRowName);
 
-	TArray<FName> AllRowNames;
-	if (DataTable != nullptr)
-	{
-		for (TMap<FName, uint8*>::TConstIterator Iterator(DataTable->GetRowMap()); Iterator; ++Iterator)
-		{
-			AllRowNames.Add(Iterator.Key());
-		}
+  TArray<FName> AllRowNames;
+  if (DataTable != nullptr)
+  {
+    for (TMap<FName, uint8*>::TConstIterator Iterator(DataTable->GetRowMap()); Iterator; ++Iterator)
+    {
+      AllRowNames.Add(Iterator.Key());
+    }
 
-		// Sort the names alphabetically.
-		AllRowNames.Sort(FNameLexicalLess());
-	}
+    // Sort the names alphabetically.
+    AllRowNames.Sort(FNameLexicalLess());
+  }
 
-	for (const FName& RowName : AllRowNames)
-	{
-		OutStrings.Add(MakeShared<FString>(RowName.ToString()));
-		OutRestrictedItems.Add(false);
-	}
+  for (const FName& RowName : AllRowNames)
+  {
+    OutStrings.Add(MakeShared<FString>(RowName.ToString()));
+    OutRestrictedItems.Add(false);
+  }
 }
 
 

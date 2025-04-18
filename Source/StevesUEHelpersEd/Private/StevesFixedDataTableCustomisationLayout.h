@@ -31,6 +31,7 @@ protected:
 	void OnGetRowStrings(TArray< TSharedPtr<FString> >& OutStrings, TArray<TSharedPtr<SToolTip>>& OutToolTips, TArray<bool>& OutRestrictedItems) const;
 	FString OnGetRowValueString() const;
 	void BrowseTableButtonClicked();
+	void ClearButtonClicked();
 
 	TSharedPtr<IPropertyHandle> DataTablePropertyHandle;
 	TSharedPtr<IPropertyHandle> RowNamePropertyHandle;
